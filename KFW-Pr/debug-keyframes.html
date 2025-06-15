@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KeyFrame Debug Inspector</title>
+    <style>
+      body {
+        font-family: "Segoe UI", monospace;
+        background: #1e1e1e;
+        color: #fff;
+        padding: 20px;
+        margin: 0;
+      }
+      .debug-container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .debug-section {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        border-left: 4px solid #00d4ff;
+      }
+      .debug-title {
+        color: #00d4ff;
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 12px;
+      }
+      button {
+        background: linear-gradient(45deg, #00d4ff, #0099cc);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin: 5px;
+        font-weight: bold;
+      }
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+      }
+      .output {
+        background: #000;
+        border: 1px solid #333;
+        border-radius: 4px;
+        padding: 12px;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 10px;
+      }
+      .success {
+        color: #4caf50;
+      }
+      .error {
+        color: #f44336;
+      }
+      .warning {
+        color: #ff9800;
+      }
+      .info {
+        color: #00d4ff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="debug-container">
+      <h1>🔍 KeyFrame Debug Inspector</h1>
+      <p>Tool để debug keyframe detection trong Premiere Pro UXP</p>
+
+      <div class="debug-section">
+        <div class="debug-title">📋 Project & Sequence Info</div>
+        <button onclick="inspectProjectStructure()">
+          Inspect Project Structure
+        </button>
+        <button onclick="inspectSequenceInfo()">Inspect Sequence Info</button>
+        <div id="project-output" class="output"></div>
+      </div>
+
+      <div class="debug-section">
+        <div class="debug-title">🎬 Track & Item Analysis</div>
+        <button onclick="analyzeVideoTracks()">Analyze Video Tracks</button>
+        <button onclick="analyzeTrackItems()">Analyze Track Items</button>
+        <button onclick="analyzeSelection()">Analyze Current Selection</button>
+        <div id="track-output" class="output"></div>
+      </div>
+
+      <div class="debug-section">
+        <div class="debug-title">🔑 Component & Property Deep Dive</div>
+        <button onclick="inspectComponents()">Inspect Component Chains</button>
+        <button onclick="searchForKeyframes()">Search for All Keyframes</button>
+        <button onclick="testKeyframeMethods()">Test Keyframe Methods</button>
+        <div id="component-output" class="output"></div>
+      </div>
+
+      <div class="debug-section">
+        <div class="debug-title">⚡ API Method Testing</div>
+        <button onclick="testAllAPIMethods()">
+          Test All Available Methods
+        </button>
+        <button onclick="listObjectProperties()">List Object Properties</button>
+        <div id="api-output" class="output"></div>
+      </div>
+    </div>
+
+    <script>
+      // Utility functions
+      function log(message, type = "info", outputId = "project-output") {
+        const timestamp = new Date().toLocaleTimeString();
+        const output = document.getElementById(outputId);
+        output.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+        output.scrollTop = output.scrollHeight;
+      }
+
+      function clearOutput(outputId) {
+        document.getElementById(outputId).innerHTML = "";
+      }
+
+      // Project & Sequence Analysis
+      async function inspectProjectStructure() {
+        clearOutput("project-output");
+        log("🔍 Inspecting project structure...", "info", "project-output");
+
+        try {
+          const project = await ppro.Project.getActiveProject();
+          if (!project) {
+            log("❌ No active project found", "error", "project-output");
+            return;
+          }
+
+          log(`✅ Project found: ${project.name}`, "success", "project-output");
+          log(`📁 Project path: ${project.path}`, "info", "project-output");
+          log(`🆔 Project GUID: ${project.guid}`, "info", "project-output");
+
+          // Get sequences
+          const sequences = await project.getSequences();
+          log(
+            `📺 Total sequences: ${sequences.length}`,
+            "info",
+            "project-output"
+          );
+
+          for (let i = 0; i < sequences.length; i++) {
+            const seq = sequences[i];
+            log(
+              `  Sequence ${i}: ${seq.name} (${seq.guid})`,
+              "info",
+              "project-output"
+            );
+          }
+        } catch (error) {
+          log(
+            `❌ Error inspecting project: ${error.message}`,
+            "error",
+            "project-output"
+          );
+        }
+      }
+
+      async function inspectSequenceInfo() {
+        clearOutput("project-output");
+        log("🎬 Inspecting active sequence...", "info", "project-output");
+
+        try {
+          const project = await ppro.Project.getActiveProject();
+          const sequence = await project.getActiveSequence();
+
+          if (!sequence) {
+            log("❌ No active sequence found", "error", "project-output");
+            return;
+          }
+
+          log(
+            `✅ Active sequence: ${sequence.name}`,
+            "success",
+            "project-output"
+          );
+          log(`🆔 Sequence GUID: ${sequence.guid}`, "info", "project-output");
+
+          const videoTrackCount = await sequence.getVideoTrackCount();
+          const audioTrackCount = await sequence.getAudioTrackCount();
+
+          log(`📹 Video tracks: ${videoTrackCount}`, "info", "project-output");
+          log(`🔊 Audio tracks: ${audioTrackCount}`, "info", "project-output");
+
+          // Test sequence methods
+          const methods = [
+            "getSelection",
+            "getPlayerPosition",
+            "getTimebase",
+            "getFrameSize",
+          ];
+          for (const method of methods) {
+            try {
+              if (sequence[method]) {
+                const result = await sequence[method]();
+                log(
+                  `  ${method}(): ${JSON.stringify(result)}`,
+                  "info",
+                  "project-output"
+                );
+              } else {
+                log(
+                  `  ${method}(): NOT AVAILABLE`,
+                  "warning",
+                  "project-output"
+                );
+              }
+            } catch (e) {
+              log(
+                `  ${method}(): ERROR - ${e.message}`,
+                "error",
+                "project-output"
+              );
+            }
+          }
+        } catch (error) {
+          log(
+            `❌ Error inspecting sequence: ${error.message}`,
+            "error",
+            "project-output"
+          );
+        }
+      }
+
+      // Track Analysis
+      async function analyzeVideoTracks() {
+        clearOutput("track-output");
+        log("📹 Analyzing video tracks...", "info", "track-output");
+
+        try {
+          const project = await ppro.Project.getActiveProject();
+          const sequence = await project.getActiveSequence();
+          const videoTrackCount = await sequence.getVideoTrackCount();
+
+          for (let i = 0; i < videoTrackCount; i++) {
+            log(`--- Video Track ${i} ---`, "info", "track-output");
+
+            const track = await sequence.getVideoTrack(i);
+
+            log(`  Name: ${track.name}`, "info", "track-output");
+            log(`  ID: ${track.id}`, "info", "track-output");
+            log(`  Index: ${await track.getIndex()}`, "info", "track-output");
+            log(`  Muted: ${await track.isMuted()}`, "info", "track-output");
+
+            // Get track items
+            const trackItems = await track.getTrackItems(1, false); // CLIP type only
+            log(
+              `  Track items (CLIP): ${trackItems.length}`,
+              "success",
+              "track-output"
+            );
+
+            for (let j = 0; j < trackItems.length; j++) {
+              const item = trackItems[j];
+              log(
+                `    Item ${j}: ${await item.getName()}`,
+                "info",
+                "track-output"
+              );
+              log(`    Type: ${await item.getType()}`, "info", "track-output");
+              log(
+                `    Selected: ${await item.getIsSelected()}`,
+                "info",
+                "track-output"
+              );
+            }
+          }
+        } catch (error) {
+          log(
+            `❌ Error analyzing tracks: ${error.message}`,
+            "error",
+            "track-output"
+          );
+        }
+      }
+
+      async function analyzeSelection() {
+        clearOutput("track-output");
+        log("🎯 Analyzing current selection...", "info", "track-output");
+
+        try {
+          const project = await ppro.Project.getActiveProject();
+          const sequence = await project.getActiveSequence();
+
+          // Method 1: sequence.getSelection()
+          try {
+            const selection = await sequence.getSelection();
+            log(
+              `✅ sequence.getSelection() successful`,
+              "success",
+              "track-output"
+            );
+
+            if (selection.getTrackItems) {
+              const trackItems = await selection.getTrackItems();
+              log(
+                `📦 Selected track items: ${trackItems.length}`,
+                "info",
+                "track-output"
+              );
+            } else {
+              log(
+                `⚠️ selection.getTrackItems() not available`,
+                "warning",
+                "track-output"
+              );
+            }
+          } catch (e) {
+            log(
+              `❌ sequence.getSelection() failed: ${e.message}`,
+              "error",
+              "track-output"
+            );
+          }
+
+          // Method 2: Check all track items for selection
+          log(
+            `--- Scanning all items for selection ---`,
+            "info",
+            "track-output"
+          );
+          const videoTrackCount = await sequence.getVideoTrackCount();
+          let selectedCount = 0;
+
+          for (let i = 0; i < videoTrackCount; i++) {
+            const track = await sequence.getVideoTrack(i);
+            const trackItems = await track.getTrackItems(1, false);
+
+            for (const item of trackItems) {
+              const isSelected = await item.getIsSelected();
+              if (isSelected) {
+                selectedCount++;
+                log(
+                  `  ✅ Selected: ${await item.getName()} on track ${i}`,
+                  "success",
+                  "track-output"
+                );
+              }
+            }
+          }
+
+          log(
+            `📊 Total selected items found: ${selectedCount}`,
+            selectedCount > 0 ? "success" : "warning",
+            "track-output"
+          );
+        } catch (error) {
+          log(
+            `❌ Error analyzing selection: ${error.message}`,
+            "error",
+            "track-output"
+          );
+        }
+      }
+
+      // Component Analysis
+      async function inspectComponents() {
+        clearOutput("component-output");
+        log("🔧 Inspecting component chains...", "info", "component-output");
+
+        try {
+          const project = await ppro.Project.getActiveProject();
+          const sequence = await project.getActiveSequence();
+          const videoTrackCount = await sequence.getVideoTrackCount();
+
+          for (let i = 0; i < videoTrackCount; i++) {
+            const track = await sequence.getVideoTrack(i);
+            const trackItems = await track.getTrackItems(1, false);
+
+            for (let j = 0; j < trackItems.length; j++) {
+              const item = trackItems[j];
+              const itemName = await item.getName();
+
+              log(
+                `--- ${itemName} (Track ${i}, Item ${j}) ---`,
+                "info",
+                "component-output"
+              );
+
+              const componentChain = await item.getComponentChain();
+              const componentCount = await componentChain.getComponentCount();
+
+              log(
+                `  Components: ${componentCount}`,
+                "info",
+                "component-output"
+              );
+
+              for (let k = 0; k < componentCount; k++) {
+                const component = await componentChain.getComponentAtIndex(k);
+
+                log(`    Component ${k}:`, "info", "component-output");
+
+                if (component.getProperties) {
+                  const properties = await component.getProperties();
+                  log(
+                    `      Properties: ${properties.length}`,
+                    "info",
+                    "component-output"
+                  );
+
+                  for (let p = 0; p < Math.min(properties.length, 5); p++) {
+                    const property = properties[p];
+                    const displayName =
+                      property.displayName || property.name || "Unknown";
+                    const isTimeVarying = property.isTimeVarying
+                      ? await property.isTimeVarying()
+                      : false;
+
+                    log(
+                      `        ${displayName}: ${
+                        isTimeVarying ? "KEYFRAMED" : "static"
+                      }`,
+                      isTimeVarying ? "success" : "info",
+                      "component-output"
+                    );
+                  }
+                }
+              }
+            }
+          }
+        } catch (error) {
+          log(
+            `❌ Error inspecting components: ${error.message}`,
+            "error",
+            "component-output"
+          );
+        }
+      }
+
+      async function searchForKeyframes() {
+        clearOutput("component-output");
+        log("🔑 Searching for keyframes...", "info", "component-output");
+
+        try {
+          const project = await ppro.Project.getActiveProject();
+          const sequence = await project.getActiveSequence();
+          const videoTrackCount = await sequence.getVideoTrackCount();
+
+          let totalKeyframeProperties = 0;
+
+          for (let i = 0; i < videoTrackCount; i++) {
+            const track = await sequence.getVideoTrack(i);
+            const trackItems = await track.getTrackItems(1, false);
+
+            for (const item of trackItems) {
+              const componentChain = await item.getComponentChain();
+              const componentCount = await componentChain.getComponentCount();
+
+              for (let k = 0; k < componentCount; k++) {
+                const component = await componentChain.getComponentAtIndex(k);
+
+                if (component.getProperties) {
+                  const properties = await component.getProperties();
+
+                  for (const property of properties) {
+                    if (
+                      property.isTimeVarying &&
+                      (await property.isTimeVarying())
+                    ) {
+                      totalKeyframeProperties++;
+
+                      const displayName =
+                        property.displayName || "Unknown Property";
+
+                      // Test keyframe methods
+                      let keyframeInfo = "";
+
+                      if (property.getKeyframeListAsTickTimes) {
+                        try {
+                          const keyframeTimes =
+                            await property.getKeyframeListAsTickTimes();
+                          keyframeInfo += ` [${keyframeTimes.length} keyframes]`;
+                        } catch (e) {
+                          keyframeInfo += ` [getKeyframeListAsTickTimes failed]`;
+                        }
+                      }
+
+                      if (property.areKeyframesSupported) {
+                        try {
+                          const supported =
+                            await property.areKeyframesSupported();
+                          keyframeInfo += ` [keyframes ${
+                            supported ? "supported" : "not supported"
+                          }]`;
+                        } catch (e) {
+                          keyframeInfo += ` [areKeyframesSupported failed]`;
+                        }
+                      }
+
+                      log(
+                        `🔑 ${displayName}${keyframeInfo}`,
+                        "success",
+                        "component-output"
+                      );
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          log(
+            `📊 Total keyframed properties found: ${totalKeyframeProperties}`,
+            "success",
+            "component-output"
+          );
+        } catch (error) {
+          log(
+            `❌ Error searching keyframes: ${error.message}`,
+            "error",
+            "component-output"
+          );
+        }
+      }
+
+      // API Testing
+      async function testAllAPIMethods() {
+        clearOutput("api-output");
+        log("⚡ Testing all available API methods...", "info", "api-output");
+
+        const testResults = {};
+
+        try {
+          const project = await ppro.Project.getActiveProject();
+          const sequence = await project.getActiveSequence();
+
+          // Test project methods
+          const projectMethods = [
+            "getActiveSequence",
+            "getSequences",
+            "getRootItem",
+            "save",
+          ];
+          for (const method of projectMethods) {
+            try {
+              if (project[method]) {
+                testResults[`project.${method}`] = "AVAILABLE";
+              } else {
+                testResults[`project.${method}`] = "NOT AVAILABLE";
+              }
+            } catch (e) {
+              testResults[`project.${method}`] = `ERROR: ${e.message}`;
+            }
+          }
+
+          // Test sequence methods
+          const sequenceMethods = [
+            "getVideoTrackCount",
+            "getSelection",
+            "getPlayerPosition",
+            "clearSelection",
+          ];
+          for (const method of sequenceMethods) {
+            try {
+              if (sequence[method]) {
+                testResults[`sequence.${method}`] = "AVAILABLE";
+              } else {
+                testResults[`sequence.${method}`] = "NOT AVAILABLE";
+              }
+            } catch (e) {
+              testResults[`sequence.${method}`] = `ERROR: ${e.message}`;
+            }
+          }
+
+          // Display results
+          for (const [method, status] of Object.entries(testResults)) {
+            const type =
+              status === "AVAILABLE"
+                ? "success"
+                : status === "NOT AVAILABLE"
+                ? "warning"
+                : "error";
+            log(`${method}: ${status}`, type, "api-output");
+          }
+        } catch (error) {
+          log(
+            `❌ Error testing API methods: ${error.message}`,
+            "error",
+            "api-output"
+          );
+        }
+      }
+
+      // Initialize
+      document.addEventListener("DOMContentLoaded", function () {
+        log(
+          "🚀 KeyFrame Debug Inspector loaded successfully",
+          "success",
+          "project-output"
+        );
+        log(
+          "Click buttons to start investigating keyframe detection",
+          "info",
+          "project-output"
+        );
+      });
+    </script>
+  </body>
+</html>

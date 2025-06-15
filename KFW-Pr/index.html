@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>KeyFrame Wingman</title>
+    <script src="main.js"></script>
+    <link rel="stylesheet" href="./Styles/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h3>KeyFrame Wingman</h3>
+        <p class="subtitle">Easing Control Tool</p>
+      </div>
+
+      <!-- Main Control Panel -->
+      <div class="control-panel">
+        <!-- Status Display -->
+        <div class="status-section">
+          <div class="status-indicator" id="status-indicator">
+            <span class="status-dot"></span>
+            <span id="status-text">No keyframes selected</span>
+          </div>
+        </div>
+
+        <!-- Easing Controls -->
+        <div class="easing-section">
+          <h4>Easing Parameters</h4>
+
+          <!-- First Slider - Ease In -->
+          <div class="slider-group">
+            <label for="ease-in-slider">
+              Ease In: <span id="ease-in-value">25</span>%
+            </label>
+            <input
+              type="range"
+              id="ease-in-slider"
+              class="easing-slider"
+              min="0"
+              max="100"
+              value="25"
+              step="1"
+            />
+          </div>
+
+          <!-- Second Slider - Ease Out -->
+          <div class="slider-group">
+            <label for="ease-out-slider">
+              Ease Out: <span id="ease-out-value">75</span>%
+            </label>
+            <input
+              type="range"
+              id="ease-out-slider"
+              class="easing-slider"
+              min="0"
+              max="100"
+              value="75"
+              step="1"
+            />
+          </div>
+
+          <!-- Bezier Preview -->
+          <div class="bezier-preview">
+            <small
+              >Cubic-Bezier:
+              <span id="bezier-display">cubic-bezier(0.25, 0, 0.75, 1)</span>
+            </small>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-section">
+          <button id="refresh-keyframes" class="secondary-button">
+            Manual Refresh
+          </button>
+          <button id="apply-easing" class="primary-button" disabled>
+            Apply Easing
+          </button>
+          <button id="reset-easing" class="secondary-button">
+            Reset to Linear
+          </button>
+        </div>
+
+        <!-- Instructions -->
+        <div class="instructions">
+          <h5>📋 New Workflow (UXP Limitation):</h5>
+          <ol>
+            <li>🎬 Select clips with keyframes in <strong>Timeline</strong></li>
+            <li>🔄 Click "Manual Refresh" to scan for keyframes</li>
+            <li>⚙️ Adjust the easing sliders above</li>
+            <li>✨ Click "Apply Easing" to update keyframes</li>
+          </ol>
+          <div class="workflow-note">
+            <small>
+              📝 <strong>Note:</strong> UXP doesn't support Effect Controls
+              selection yet. This workflow targets selected timeline clips
+              instead.
+            </small>
+          </div>
+          <button id="toggle-debug" class="debug-toggle">
+            Show Debug Info
+          </button>
+        </div>
+      </div>
+
+      <!-- Debug Info (can be hidden in production) -->
+      <div class="debug-section" id="debug-section" style="display: none">
+        <h5>Debug Info</h5>
+        <div id="debug-output"></div>
+      </div>
+    </div>
+  </body>
+</html>
